@@ -18,6 +18,8 @@ export class AppComponent implements OnInit {
   selectedLog: any = null;
   selectedIds: string[] = [];
   searchText: string = '';
+  startDate: string = '';
+  endDate: string = '';
 
   currentPage: number = 1;
   limit: number = 50;
@@ -29,21 +31,16 @@ export class AppComponent implements OnInit {
     setInterval(() => this.fetchLogs(false), 5000);
   }
 
-  get filteredLogs() {
-    if (!this.searchText) return this.logs;
-    const term = this.searchText.toLowerCase();
+  onSearchChange() {
+    this.fetchLogs(false);
+  }
 
-    return this.logs.filter((log) => {
-      return (
-        log.projectKey?.toLowerCase().includes(term) ||
-        log.endpoint?.toLowerCase().includes(term) ||
-        log.errorMessage?.toLowerCase().includes(term) ||
-        log.ip?.includes(term) ||
-        log.method?.toLowerCase().includes(term) ||
-        log.userAgent?.toLowerCase().includes(term) ||
-        JSON.stringify(log.payload).toLowerCase().includes(term)
-      );
-    });
+  onDateChange() {
+    this.fetchLogs(false);
+  }
+
+  get filteredLogs() {
+    return this.logs;
   }
 
   fetchLogs(isLoadMore: boolean = false) {
@@ -51,7 +48,17 @@ export class AppComponent implements OnInit {
       this.currentPage = 1;
     }
 
-    const url = `http://localhost:3005/api/logs?page=${this.currentPage}&limit=${this.limit}`;
+    let url = `http://localhost:3005/api/logs?page=${this.currentPage}&limit=${this.limit}`;
+
+    if (this.searchText) {
+      url += `&search=${encodeURIComponent(this.searchText)}`;
+    }
+    if (this.startDate) {
+      url += `&startDate=${this.startDate}`;
+    }
+    if (this.endDate) {
+      url += `&endDate=${this.endDate}`;
+    }
 
     this.http.get<any>(url).subscribe({
       next: (response) => {
@@ -73,7 +80,6 @@ export class AppComponent implements OnInit {
     });
   }
 
-  
   loadMore() {
     if (this.currentPage < this.totalPages) {
       this.currentPage++;
@@ -109,12 +115,11 @@ export class AppComponent implements OnInit {
       .post('http://localhost:3005/api/logs/delete', { ids: this.selectedIds })
       .subscribe(() => {
         this.selectedIds = [];
-        this.fetchLogs(); 
+        this.fetchLogs();
         this.selectedLog = null;
       });
   }
 
-  
   isAnalyzing: boolean = false;
   aiAnalysisResult: string | null = null;
 
